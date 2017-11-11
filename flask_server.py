@@ -1,5 +1,5 @@
 from flask import Flask, request
-from game_engine import play
+from game_engine import Game
 from set_reader import import_card_set_from_file
 
 
@@ -14,16 +14,17 @@ def fight():
     if len(angel_deck) == 0 or len(demon_deck) == 0:
         return "Provide angel_deck and demon_deck parameters in your GET request"
 
-    angel_deck = tuple(map(int, angel_deck.split(',')))
-    demon_deck = tuple(map(int, demon_deck.split(',')))
+    angel_deck = tuple(map(int, angel_deck.replace(' ', '').split(',')))
+    demon_deck = tuple(map(int, demon_deck.replace(' ', '').split(',')))
 
     card_set = import_card_set_from_file("test_set.scg")
+    game = Game(card_set, (angel_deck, demon_deck))
 
     angel = 0
     demon = 0
-    tests = 10000
+    tests = 100
     for i in range(tests):
-        result = tuple(play(card_set, (angel_deck, demon_deck)))
+        result = tuple(game.play())
         angel += result[0]
         demon += result[1]
 

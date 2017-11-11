@@ -2,8 +2,8 @@ from copy import copy, deepcopy
 from operator import attrgetter
 from random import shuffle, randint
 from set_reader import import_card_set_from_file
-from Creature import Creature
-from Commander import Commander
+from creature import Creature
+from commander import Commander
 
 from config import DEBUG, RENDER_BATTLEFIELD, RENDER_HAND, DRAW_INFO, DAMAGE_INFO
 
@@ -34,7 +34,7 @@ class Game:
 
         for player in (self.__fp, self.__sp):
             for card_id in self.deck_lists[player]:
-                self.__decks[player].append(copy(card_set[card_id]))
+                self.__decks[player].append(copy(self.card_set[card_id]))
             shuffle(self.__decks[player])
             self.__deck_priority[player].extend(list(self.deck_lists[player]))
 
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     ser_deck = tuple([1, 5, 3, 2, 4, 2, 1, 3, 2, 2, 1, 5, 3, 2, 4, 2, 1, 3, 2, 2])
     card_set = import_card_set_from_file("test_set.scg")
 
-    game = Game(card_set, (my_deck, ser_deck), player_names=("Daniil", "Sergey"))
+    game = Game(card_set, (my_deck, ser_deck))
     game.play()
 
     # angel = 0
