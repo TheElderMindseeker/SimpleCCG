@@ -13,7 +13,6 @@ class Game:
         self.card_set = deepcopy(card_set)
         self.deck_lists = deepcopy(deck_lists)
         self.player_names = player_names
-        self.__reset()
 
     @staticmethod
     def __opponent(player):
@@ -27,7 +26,7 @@ class Game:
     def __reset(self):
         self.__toss_coin()
         self.__battlefield = ([], [])
-        self.__commanders = (Commander(self.player_names[self.__fp], 10), Commander(self.player_names[self.__sp], 10))
+        self.__commanders = (Commander(self.player_names[0], 20), Commander(self.player_names[1], 20))
         self.__hands = ([], [])
         self.__decks = ([], [])
         self.__deck_priority = ([], [])
@@ -41,12 +40,12 @@ class Game:
     def __next_player(self):
         self.__active_player = (self.__active_player + 1) % 2
 
-    def __add_creature_to_battlefield(self, card, active_player):
+    def __add_creature_to_battlefield(self, card):
         creature = Creature(card)
-        battle_row = self.__battlefield[active_player]
+        battle_row = self.__battlefield[self.__active_player]
         battle_row.append(creature)
         if DEBUG:
-            print("Added " + creature.name + " to the battlefield")
+            print(self.__commanders[self.__active_player].name + " placed " + creature.name + " onto the battlefield")
 
     def __remove_creature_from_battlefield(self, creature_position, player):
         battle_row = self.__battlefield[player]
@@ -74,11 +73,11 @@ class Game:
                 self.__sort_hand(player)
 
             if DRAW_INFO:
-                print("Player has drawn " + card.name + " to his hand with priority " + str(card.priority))
+                print(self.__commanders[player].name + " has drawn " + card.name + " to his hand with priority " + str(card.priority))
         else:
             commander.deal_damage(1)
             if DAMAGE_INFO and DRAW_INFO:
-                print("Player's commanders is dealt 1 damage because his deck is empty")
+                print(self.__commanders[player].name + " is dealt 1 damage because his deck is empty")
 
     def __draw_n_cards(self, player, n):
         for i in range(n):
@@ -94,71 +93,134 @@ class Game:
 
         if len(hand) > 0:
             card = hand.pop()
-            self.__add_creature_to_battlefield(card, player)
+            self.__add_creature_to_battlefield(card)
             self.__activate_battle_cry(battle_row[-1])
             opposing_row = self.__battlefield[self.__opponent(self.__active_player)]
             if len(opposing_row) >= len(battle_row):
                 self.__activate_duel(battle_row[-1], len(battle_row) - 1)
         else:
             if DEBUG:
-                print("Player's hand is empty")
+                print(self.__commanders[player].name + "'s hand is empty")
 
+    # TODO: Refactor this function
     def __activate_battle_cry(self, creature):
         battle_cry = creature.abilities.get('battlecry')
         if battle_cry:
             if battle_cry[0] == 'strike':
+                damage = int(battle_cry[2])
                 if battle_cry[1] == 'enemy_commander':
-                    damage = int(battle_cry[2])
-                    self.__commanders[self.__opponent(self.__active_player)].deal_damage(damage)
-                    if DAMAGE_INFO:
-                        print(creature.name + " strikes for " + str(damage) + " damage "
-                              + self.__commanders[self.__opponent(self.__active_player)].name + " leaving it with "
-                              + str(self.__commanders[self.__opponent(self.__active_player)].life_total)
-                              + " life total")
+                    target = self.__commanders[self.__opponent(self.__active_player)]
                 elif battle_cry[1] == 'ally_commander':
-                    damage = int(battle_cry[2])
-                    self.__commanders[self.__active_player].deal_damage(damage)
-                    if DAMAGE_INFO:
-                        print(creature.name + " strikes for " + str(damage) + " damage "
-                              + self.__commanders[self.__active_player].name + " leaving it with "
-                              + str(self.__commanders[self.__active_player].life_total) + " life total")
+                    target = self.__commanders[self.__active_player]
+
+                target.deal_damage(damage)
+                if DAMAGE_INFO:
+                    print(creature.name + " strikes for " + str(damage) + " damage " + target.name + " leaving it with "
+                          + str(target.health) + " health")
+
             elif battle_cry[0] == 'heal':
+                heal = int(battle_cry[2])
                 if battle_cry[1] == 'ally_commander':
-                    heal = int(battle_cry[2])
-                    self.__commanders[self.__active_player].heal(heal)
-                    if DAMAGE_INFO:
-                        print(creature.name + " heals for " + str(heal) + " points "
-                              + self.__commanders[self.__active_player].name + " up to "
-                              + str(self.__commanders[self.__active_player].life_total) + " life total")
+                    target = self.__commanders[self.__active_player]
+
+                target.heal(heal)
+                if DAMAGE_INFO:
+                    print(creature.name + " heals for " + str(heal) + " points " + target.name + " up to "
+                          + str(target.health) + " health")
             elif battle_cry[0] == 'draw':
                 self.__draw_n_cards(self.__active_player, int(battle_cry[1]))
                 if DRAW_INFO:
                     print(creature.name + " has drawn " + battle_cry[1] + " cards for its commander")
+            elif battle_cry[0] == 'discard':
+                if battle_cry[1] == 'ally_hand':
+                    target_hand = self.__hands[self.__active_player]
+                    target_commander = self.__commanders[self.__active_player]
+                elif battle_cry[1] == 'enemy_hand':
+                    target_hand = self.__hands[self.__opponent(self.__active_player)]
+                    target_commander = self.__commanders[self.__opponent(self.__active_player)]
 
+                for count in range(int(battle_cry[3])):
+                    if battle_cry[2] == 'random':
+                        if len(target_hand) > 0:
+                            discard_position = randint(0, len(target_hand) - 1)
+                            card = target_hand.pop(discard_position)
+                            if DRAW_INFO:
+                                print(target_commander.name + " has discarded " + card.name + " with priority "
+                                      + str(card.priority) + " from its hand")
+                        else:
+                            target_commander.deal_damage(1)
+                            if DAMAGE_INFO:
+                                print(target_commander.name + " suffers 1 damage from discard effect because his hand"
+                                      + " is empty")
+
+                    elif battle_cry[2] == 'prioritized':
+                        if len(target_hand) > 0:
+                            card = target_hand.pop()
+                            if DRAW_INFO:
+                                print(target_commander.name + " has discarded " + card.name + " with priority "
+                                      + str(card.priority) + " from its hand")
+                        else:
+                            target_commander.deal_damage(1)
+                            if DAMAGE_INFO:
+                                print(
+                                    target_commander.name + " suffers 1 damage from discard effect because his hand"
+                                    + " is empty")
+
+    # TODO: Refactor this function
     def __activate_duel(self, creature, creature_position):
         duel = creature.abilities.get('duel')
+        opponent = self.__battlefield[self.__opponent(self.__active_player)][creature_position]
         if duel:
             if duel[0] == 'strike':
+                damage = int(duel[2])
                 if duel[1] == 'opponent_creature':
-                    opponent = self.__battlefield[self.__opponent(self.__active_player)][creature_position]
-                    damage = int(duel[2])
-                    opponent.deal_damage(damage)
-                    if DAMAGE_INFO:
-                        print(creature.name + " strikes for " + str(damage) + " damage " + opponent.name
-                              + " leaving it with " + str(opponent.health) + " health")
+                    target = opponent
                 elif duel[1] == 'enemy_commander':
-                    enemy_commander = self.__commanders[self.__opponent(self.__active_player)]
-                    damage = int(duel[2])
-                    enemy_commander.deal_damage(damage)
-                    if DAMAGE_INFO:
-                        print(creature.name + " strikes for " + str(damage) + " damage "
-                              + self.__commanders[self.__opponent(self.__active_player)].name + " leaving it with "
-                              + str(self.__commanders[self.__opponent(self.__active_player)].life_total)
-                              + " life total")
+                    target = self.__commanders[self.__opponent(self.__active_player)]
+
+                target.deal_damage(damage)
+                if DAMAGE_INFO:
+                    print(creature.name + " strikes " + target.name + " for " + str(damage)
+                          + " damage leaving it with " + str(target.health) + " health")
+
             elif duel[0] == 'draw':
                 self.__draw_n_cards(self.__active_player, int(duel[1]))
                 if DRAW_INFO:
                     print(creature.name + " has drawn " + duel[1] + " cards for its commander")
+
+            elif duel[0] == 'discard':
+                if duel[1] == 'ally_hand':
+                    target_hand = self.__hands[self.__active_player]
+                    target_commander = self.__commanders[self.__active_player]
+                elif duel[1] == 'enemy_hand':
+                    target_hand = self.__hands[self.__opponent(self.__active_player)]
+                    target_commander = self.__commanders[self.__opponent(self.__active_player)]
+
+                for count in range(int(duel[3])):
+                    if duel[2] == 'random':
+                        if len(target_hand) > 0:
+                            discard_position = randint(0, len(target_hand) - 1)
+                            card = target_hand.pop(discard_position)
+                            if DRAW_INFO:
+                                print(target_commander.name + " has discarded " + card.name + " with priority "
+                                      + str(card.priority) + " from its hand")
+                        else:
+                            target_commander.deal_damage(1)
+                            if DAMAGE_INFO:
+                                print(target_commander.name + " suffers 1 damage from discard effect because his hand"
+                                      + " is empty")
+
+                    elif duel[2] == 'prioritized':
+                        if len(target_hand) > 0:
+                            card = target_hand.pop()
+                            if DRAW_INFO:
+                                print(target_commander.name + " has discarded " + card.name + " with priority "
+                                      + str(card.priority) + " from its hand")
+                        else:
+                            target_commander.deal_damage(1)
+                            if DAMAGE_INFO:
+                                print(target_commander.name + " suffers 1 damage from discard effect because his hand"
+                                      + " is empty")
 
     def __deal_combat_damage(self, position):
         attacking_battle_row = self.__battlefield[self.__active_player]
@@ -169,18 +231,20 @@ class Game:
             if len(defending_battle_row) > position:
                 opponent = defending_battle_row[position]
                 opponent.deal_damage(active_creature.attack)
-                active_creature.deal_damage(opponent.defense)
                 if DAMAGE_INFO:
                     print(active_creature.name + " deals " + str(active_creature.attack) + " damage to " + opponent.name
                           + " leaving it with " + str(opponent.health) + " health")
-                    print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
-                          + " in response leaving it with " + str(active_creature.health) + " health")
+                if opponent.defense > 0:
+                    active_creature.deal_damage(opponent.defense)
+                    if DAMAGE_INFO:
+                        print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
+                              + " in response leaving it with " + str(active_creature.health) + " health")
             else:
                 self.__commanders[self.__opponent(self.__active_player)].deal_damage(active_creature.attack)
                 if DAMAGE_INFO:
                     print(active_creature.name + " deals " + str(active_creature.attack) + " damage to "
                           + self.__commanders[self.__opponent(self.__active_player)].name + " leaving it with "
-                          + str(self.__commanders[self.__opponent(self.__active_player)].life_total) + " life total")
+                          + str(self.__commanders[self.__opponent(self.__active_player)].health) + " life total")
 
     def __remove_dead_from_battlefield(self):
         new_battlefield = ([], [])
@@ -193,7 +257,7 @@ class Game:
         self.__battlefield = new_battlefield
 
     def __render_battlefield(self):
-        creatures_icons = {1: 'V', 2: 'C', 3: 'W', 4: 'A', 5: 'M', 6: 'S'}
+        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C'}
 
         battlefield = self.__battlefield
         max_row = max(len(battlefield[self.__fp]), len(battlefield[self.__sp]))
@@ -203,28 +267,34 @@ class Game:
             print('|', end='')
             for creature in battlefield[battle_row]:
                 print(creatures_icons[creature.card_id], end='|')
-            print('')
+            print()
         print('-' * (1 + 2 * max_row))
 
     def __render_player_hand(self, player):
-        creatures_icons = {1: 'V', 2: 'C', 3: 'W', 4: 'A', 5: 'M', 6: 'S'}
+        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C'}
 
         hand = self.__hands[player]
 
+        print(self.__commanders[player].name + "'s hand:", end=' ')
         for card in hand:
             print(creatures_icons[card.card_id], end=' ')
-        print('')
+        print()
 
     def play(self):
         self.__reset()
 
         for player in (self.__fp, self.__sp):
             self.__draw_n_cards(player, 3)
+            if DRAW_INFO:
+                print()
         self.__draw_card(self.__sp)
+        if DRAW_INFO:
+            print()
 
         if RENDER_HAND:
             self.__render_player_hand(player=self.__fp)
             self.__render_player_hand(player=self.__sp)
+            print()
 
         while self.__commanders[self.__fp].is_alive() and self.__commanders[self.__sp].is_alive():
             active_player = self.__active_player
@@ -263,26 +333,3 @@ class Game:
                     print(self.__commanders[player].name + " was defeated!\n")
 
         return result
-
-
-if __name__ == "__main__":
-    my_deck = tuple([2, 2, 6, 4, 4, 1, 3, 3, 5, 5, 2, 2, 6, 4, 4, 1, 3, 3, 5, 5])
-    ser_deck = tuple([1, 5, 3, 2, 4, 2, 1, 3, 2, 2, 1, 5, 3, 2, 4, 2, 1, 3, 2, 2])
-    card_set = import_card_set_from_file("test_set.scg")
-
-    game = Game(card_set, (my_deck, ser_deck))
-    game.play()
-
-    # angel = 0
-    # demon = 0
-    # TESTS = 1000
-    # for i in range(TESTS):
-    #     result = tuple(game.play())
-    #     angel += result[0]
-    #     demon += result[1]
-    #     if (i + 1) % 1000 == 0:
-    #         print(str(i + 1) + "th test played")
-    #
-    # print("Daniil winrate: " + str(100 * angel / TESTS) + "%")
-    # print("Sergey winrate: " + str(100 * demon / TESTS) + "%")
-    # print("Draw rate: " + str(100 * (1 - (angel + demon) / TESTS)) + "%")
