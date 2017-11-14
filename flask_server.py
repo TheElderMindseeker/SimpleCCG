@@ -46,7 +46,7 @@ def fight():
         response += "<p>Draw rate: " + str(100 * (1 - (angel + demon) / tests)) + "%</p>"
         return response
 
-    return render_template("fight.html", form=form)
+    return render_template("index.html", form=form)
 
 
 if __name__ == "__main__":

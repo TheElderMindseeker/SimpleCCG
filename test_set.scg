@@ -1,5 +1,7 @@
 1;Warrior;3;3;6;2;
-2;Vampire;4;2;8;2;Battlecry:Strike ally_commander 3
-3;Archer;3;1;3;1;Battlecry:Strike enemy_commander 3|Duel:Strike opponent_creature 2
-4;Cleric;2;3;4;1;Battlecry:Heal ally_commander 5
+2;Vampire;5;2;8;2;Battlecry:Strike ally_commander 3
+3;Archer;4;1;4;1;Duel:Strike opponent_creature 3
+4;Cleric;1;2;4;1;Battlecry:Heal ally_commander 4
 5;Steam Engineer;3;3;5;3;Battlecry:Draw 1|Duel:Discard enemy_hand prioritized 2
+6;Heavy Infantry;0;4;9;3;
+7;Sunburn Chaplain;2;2;4;1;Battlecry:Heal all allies 2

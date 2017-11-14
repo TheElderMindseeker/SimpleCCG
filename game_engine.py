@@ -119,14 +119,28 @@ class Game:
                           + str(target.health) + " health")
 
             elif battle_cry[0] == 'heal':
-                heal = int(battle_cry[2])
-                if battle_cry[1] == 'ally_commander':
-                    target = self.__commanders[self.__active_player]
+                if battle_cry[1] == 'all':
+                    heal = int(battle_cry[3])
+                    if battle_cry[2] == 'allies':
+                        targets = []
+                        for creature in self.__battlefield[self.__active_player]:
+                            targets.append(creature)
+                        targets.append(self.__commanders[self.__active_player])
 
-                target.heal(heal)
-                if DAMAGE_INFO:
-                    print(creature.name + " heals for " + str(heal) + " points " + target.name + " up to "
-                          + str(target.health) + " health")
+                    for target in targets:
+                        target.heal(heal)
+                        if DAMAGE_INFO:
+                            print(target.name + " is healed by " + str(heal) + " by AoE heal effect")
+
+                else:
+                    heal = int(battle_cry[2])
+                    if battle_cry[1] == 'ally_commander':
+                        target = self.__commanders[self.__active_player]
+
+                    target.heal(heal)
+                    if DAMAGE_INFO:
+                        print(creature.name + " heals for " + str(heal) + " points " + target.name + " up to "
+                              + str(target.health) + " health")
             elif battle_cry[0] == 'draw':
                 self.__draw_n_cards(self.__active_player, int(battle_cry[1]))
                 if DRAW_INFO:
@@ -227,24 +241,25 @@ class Game:
         defending_battle_row = self.__battlefield[self.__opponent(self.__active_player)]
 
         active_creature = attacking_battle_row[position]
-        if active_creature.is_active() and active_creature.attack > 0:
-            if len(defending_battle_row) > position:
-                opponent = defending_battle_row[position]
+        if len(defending_battle_row) > position:
+            opponent = defending_battle_row[position]
+            if active_creature.attack > 0:
                 opponent.deal_damage(active_creature.attack)
                 if DAMAGE_INFO:
                     print(active_creature.name + " deals " + str(active_creature.attack) + " damage to " + opponent.name
-                          + " leaving it with " + str(opponent.health) + " health")
-                if opponent.defense > 0:
-                    active_creature.deal_damage(opponent.defense)
-                    if DAMAGE_INFO:
-                        print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
-                              + " in response leaving it with " + str(active_creature.health) + " health")
-            else:
+                          + " leaving it with " + str(opponent.health) + " health while attacking")
+            if opponent.defense > 0:
+                active_creature.deal_damage(opponent.defense)
+                if DAMAGE_INFO:
+                    print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
+                          + " leaving it with " + str(active_creature.health) + " health while defending")
+        else:
+            if active_creature.is_active():
                 self.__commanders[self.__opponent(self.__active_player)].deal_damage(active_creature.attack)
                 if DAMAGE_INFO:
                     print(active_creature.name + " deals " + str(active_creature.attack) + " damage to "
                           + self.__commanders[self.__opponent(self.__active_player)].name + " leaving it with "
-                          + str(self.__commanders[self.__opponent(self.__active_player)].health) + " life total")
+                          + str(self.__commanders[self.__opponent(self.__active_player)].health) + " health")
 
     def __remove_dead_from_battlefield(self):
         new_battlefield = ([], [])
@@ -257,7 +272,7 @@ class Game:
         self.__battlefield = new_battlefield
 
     def __render_battlefield(self):
-        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C'}
+        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C', 5: 'S', 6: 'H'}
 
         battlefield = self.__battlefield
         max_row = max(len(battlefield[self.__fp]), len(battlefield[self.__sp]))
@@ -271,7 +286,7 @@ class Game:
         print('-' * (1 + 2 * max_row))
 
     def __render_player_hand(self, player):
-        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C'}
+        creatures_icons = {1: 'W', 2: 'V', 3: 'A', 4: 'C', 5: 'S', 6: 'H'}
 
         hand = self.__hands[player]
 
@@ -312,8 +327,7 @@ class Game:
                 creature.activate()
 
             for pos, creature in enumerate(self.__battlefield[active_player]):
-                if creature.is_active():
-                    self.__deal_combat_damage(pos)
+                self.__deal_combat_damage(pos)
 
             self.__summon_creature_to_battlefield(active_player)
 

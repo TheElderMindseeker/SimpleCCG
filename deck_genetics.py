@@ -13,7 +13,7 @@ def initialize_population(size):
     return [Deck(card_set) for x in range(size)]
 
 
-def selection(population, rounds=100):
+def selection(population, rounds=10):
     for deck in population:
         deck.reset()
 
@@ -37,7 +37,7 @@ def selection(population, rounds=100):
 
     population.sort(key=methodcaller('winrate'), reverse=True)
     for deck in population:
-        print(deck.deck, sum(deck.deck), '\t', deck.winrate(), sep=' ')
+        print(deck.deck, hash(deck), '\t', deck.winrate(), sep=' ')
     print(calculate_card_ii(population, card_set))
     return population[:len(population) // 2]
 
@@ -57,18 +57,45 @@ def point_mutation(sample, mutations=5):
         sample.deck[position] = choice(tuple(card_set.keys()))
 
 
+def spawn_using_crossover(population):
+    parents = list()
+    parents.append(choice([x for x in range(len(population))]))
+    parents.append(choice([x for x in range(len(population)) if x != parents[0]]))
+    new_deck = Deck(card_set)
+    for i in range(len(new_deck.deck)):
+        new_deck.deck[i] = population[parents[randint(0, 1)]].deck[i]
+    # print("Deck hash", hash(new_deck), sep=' ')
+    return new_deck
+
+
 if __name__ == "__main__":
-    pop = initialize_population(40)
-    for stage in range(10):
+    pop_size = 20
+    pop_num = 5
+
+    populations = []
+    for i in range(pop_num):
+        populations.append(initialize_population(pop_size))
+
+    for stage in range(30):
         print("Stage #" + str(stage + 1))
-        new_pop = selection(pop, rounds=50)
-        for i, sample in enumerate(new_pop):
-            if i >= len(new_pop) // 2:
-                point_mutation(sample)
-        restore_population(new_pop, 40)
-        pop = new_pop
+
+        for i in range(len(populations)):
+            new_pop = selection(populations[i])
+
+            for j, sample in enumerate(new_pop):
+                if j >= len(new_pop) // 2:
+                    point_mutation(sample)
+
+            spawn_pop = new_pop[:len(new_pop) // 2]
+            for j in range(pop_size // 4):
+                new_pop.append(spawn_using_crossover(spawn_pop))
+
+            restore_population(new_pop, pop_size)
+            populations[i] = new_pop
 
     print("Qualifiers")
-    pop = selection(pop)
+    qualified = []
+    for population in populations:
+        qualified.extend(selection(population, rounds=50))
     print("Pro tour")
-    pro_tour(pop)
+    pro_tour(qualified)
