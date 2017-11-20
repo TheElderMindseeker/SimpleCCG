@@ -2,9 +2,9 @@ class Creature:
     def __init__(self, card):
         self.card_id = card.card_id
         self.name = card.name
-        self.attack = card.strength
-        self.defense = card.cunning
-        self.health = card.fortitude
+        self.attack = card.attack
+        self.defense = card.defense
+        self.health = card.health
         self.activation = card.power
         self.power = 0
         self.abilities = card.abilities

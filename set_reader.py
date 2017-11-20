@@ -11,9 +11,9 @@ def import_card_set_from_file(file_name):
             info = card_info.strip().split(';')
             card_id = int(info[0])
             name = info[1]
-            strength = int(info[2])
-            cunning = int(info[3])
-            fortitude = int(info[4])
+            attack = int(info[2])
+            defense = int(info[3])
+            health = int(info[4])
             power = int(info[5])
 
             ability_str = info[6]
@@ -26,7 +26,7 @@ def import_card_set_from_file(file_name):
             else:
                 abilities = dict()
 
-            card_set[card_id] = Card(card_id, name, strength, cunning, fortitude, power, abilities)
+            card_set[card_id] = Card(card_id, name, attack, defense, health, power, abilities)
             if DEBUG:
                 print(card_set[card_id])
 

@@ -1,4 +1,5 @@
 from set_reader import import_card_set_from_file
+from card_generator import generate_set
 from card_statistics import calculate_card_ii
 from game_engine import Game
 from deck import Deck
@@ -6,7 +7,7 @@ from operator import methodcaller
 from random import choice, randint
 
 
-card_set = import_card_set_from_file("test_set.scg")
+card_set = generate_set(100)  # import_card_set_from_file("test_set.scg")
 
 
 def initialize_population(size):
@@ -36,14 +37,13 @@ def selection(population, rounds=10):
                 break
 
     population.sort(key=methodcaller('winrate'), reverse=True)
-    for deck in population:
-        print(deck.deck, hash(deck), '\t', deck.winrate(), sep=' ')
-    print(calculate_card_ii(population, card_set))
+    # print(population[0].deck, population[0].winrate(), sep='\t')
+    # print(calculate_card_ii(population, card_set))
     return population[:len(population) // 2]
 
 
 def pro_tour(population, rounds=100):
-    selection(population, rounds=rounds)
+    return selection(population, rounds=rounds)
 
 
 def restore_population(population, size):
@@ -69,26 +69,31 @@ def spawn_using_crossover(population):
 
 
 if __name__ == "__main__":
-    pop_size = 20
-    pop_num = 5
+    for card_id in card_set.keys():
+        print(card_set[card_id])
+
+    pop_size = 40
+    pop_num = 20
 
     populations = []
     for i in range(pop_num):
         populations.append(initialize_population(pop_size))
 
-    for stage in range(30):
+    for stage in range(100):
         print("Stage #" + str(stage + 1))
 
         for i in range(len(populations)):
             new_pop = selection(populations[i])
 
-            for j, sample in enumerate(new_pop):
-                if j >= len(new_pop) // 2:
-                    point_mutation(sample)
-
             spawn_pop = new_pop[:len(new_pop) // 2]
             for j in range(pop_size // 4):
                 new_pop.append(spawn_using_crossover(spawn_pop))
+
+            for j, sample in enumerate(new_pop):
+                if j < len(new_pop) // 2:
+                    point_mutation(sample, mutations=3)
+                else:
+                    point_mutation(sample, mutations=7)
 
             restore_population(new_pop, pop_size)
             populations[i] = new_pop
@@ -96,6 +101,20 @@ if __name__ == "__main__":
     print("Qualifiers")
     qualified = []
     for population in populations:
-        qualified.extend(selection(population, rounds=50))
+        qualified.extend(selection(population, rounds=20))
     print("Pro tour")
-    pro_tour(qualified)
+    champions = pro_tour(qualified, rounds=40)
+
+    try:
+        print(champions[0].deck, 100 * round(champions[0].winrate(), 3))
+        print(champions[1].deck, 100 * round(champions[1].winrate(), 3))
+        print(champions[2].deck, 100 * round(champions[2].winrate(), 3))
+    except:
+        pass
+
+    try:
+        cards_ii = calculate_card_ii(champions, card_set)
+        for card_id in cards_ii.keys():
+            print(card_id, round(cards_ii[card_id], 3), sep=':\t\t')
+    except:
+        pass

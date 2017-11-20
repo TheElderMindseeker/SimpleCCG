@@ -102,7 +102,6 @@ class Game:
             if DEBUG:
                 print(self.__commanders[player].name + "'s hand is empty")
 
-    # TODO: Refactor this function
     def __activate_battle_cry(self, creature):
         battle_cry = creature.abilities.get('battlecry')
         if battle_cry:
@@ -180,7 +179,6 @@ class Game:
                                     target_commander.name + " suffers 1 damage from discard effect because his hand"
                                     + " is empty")
 
-    # TODO: Refactor this function
     def __activate_duel(self, creature, creature_position):
         duel = creature.abilities.get('duel')
         opponent = self.__battlefield[self.__opponent(self.__active_player)][creature_position]
@@ -190,6 +188,8 @@ class Game:
                 if duel[1] == 'opponent_creature':
                     target = opponent
                 elif duel[1] == 'enemy_commander':
+                    target = self.__commanders[self.__opponent(self.__active_player)]
+                elif duel[1] == 'ally_commander':
                     target = self.__commanders[self.__opponent(self.__active_player)]
 
                 target.deal_damage(damage)
@@ -201,6 +201,30 @@ class Game:
                 self.__draw_n_cards(self.__active_player, int(duel[1]))
                 if DRAW_INFO:
                     print(creature.name + " has drawn " + duel[1] + " cards for its commander")
+
+            elif duel[0] == 'heal':
+                if duel[1] == 'all':
+                    heal = int(duel[3])
+                    if duel[2] == 'allies':
+                        targets = []
+                        for creature in self.__battlefield[self.__active_player]:
+                            targets.append(creature)
+                        targets.append(self.__commanders[self.__active_player])
+
+                    for target in targets:
+                        target.heal(heal)
+                        if DAMAGE_INFO:
+                            print(target.name + " is healed by " + str(heal) + " by AoE heal effect")
+
+                else:
+                    heal = int(duel[2])
+                    if duel[1] == 'ally_commander':
+                        target = self.__commanders[self.__active_player]
+
+                    target.heal(heal)
+                    if DAMAGE_INFO:
+                        print(creature.name + " heals for " + str(heal) + " points " + target.name + " up to "
+                              + str(target.health) + " health")
 
             elif duel[0] == 'discard':
                 if duel[1] == 'ally_hand':
@@ -241,20 +265,20 @@ class Game:
         defending_battle_row = self.__battlefield[self.__opponent(self.__active_player)]
 
         active_creature = attacking_battle_row[position]
-        if len(defending_battle_row) > position:
-            opponent = defending_battle_row[position]
-            if active_creature.attack > 0:
-                opponent.deal_damage(active_creature.attack)
-                if DAMAGE_INFO:
-                    print(active_creature.name + " deals " + str(active_creature.attack) + " damage to " + opponent.name
-                          + " leaving it with " + str(opponent.health) + " health while attacking")
-            if opponent.defense > 0:
-                active_creature.deal_damage(opponent.defense)
-                if DAMAGE_INFO:
-                    print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
-                          + " leaving it with " + str(active_creature.health) + " health while defending")
-        else:
-            if active_creature.is_active():
+        if active_creature.is_active():
+            if len(defending_battle_row) > position:
+                opponent = defending_battle_row[position]
+                if active_creature.attack > 0:
+                    opponent.deal_damage(active_creature.attack)
+                    if DAMAGE_INFO:
+                        print(active_creature.name + " deals " + str(active_creature.attack) + " damage to " + opponent.name
+                              + " leaving it with " + str(opponent.health) + " health while attacking")
+                if opponent.is_active() and opponent.defense > 0:
+                    active_creature.deal_damage(opponent.defense)
+                    if DAMAGE_INFO:
+                        print(opponent.name + " deals " + str(opponent.defense) + " damage to " + active_creature.name
+                              + " leaving it with " + str(active_creature.health) + " health while defending")
+            else:
                 self.__commanders[self.__opponent(self.__active_player)].deal_damage(active_creature.attack)
                 if DAMAGE_INFO:
                     print(active_creature.name + " deals " + str(active_creature.attack) + " damage to "

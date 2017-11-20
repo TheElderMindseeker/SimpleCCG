@@ -1,7 +1,14 @@
-1;Warrior;3;3;6;2;
-2;Vampire;5;2;8;2;Battlecry:Strike ally_commander 3
-3;Archer;4;1;4;1;Duel:Strike opponent_creature 3
-4;Cleric;1;2;4;1;Battlecry:Heal ally_commander 4
-5;Steam Engineer;3;3;5;3;Battlecry:Draw 1|Duel:Discard enemy_hand prioritized 2
+1;Warrior;3;2;6;1;
+2;Vampire;5;2;6;1;Battlecry:Strike ally_commander 3
+3;Archer;4;1;4;1;Duel:Strike opponent_creature 4
+4;Cleric;1;2;5;2;Battlecry:Heal ally_commander 5
+5;Steam Engineer;3;2;4;2;Battlecry:Draw 2|Duel:Discard enemy_hand prioritized 1
 6;Heavy Infantry;0;4;9;3;
-7;Sunburn Chaplain;2;2;4;1;Battlecry:Heal all allies 2
+7;Sunburn Chaplain;2;2;4;2;Duel:Heal all allies 3
+8;Blood Imp;7;0;5;1;
+9;Veteran Duelist;2;2;5;2;Duel:Strike opponent_creature 5
+10;Life Energy Mage;0;1;4;2;Battlecry:Heal ally_commander 6|Duel:Strike enemy_commander 4
+11;Goblin Engineer;5;1;4;1;Battlecry:Discard ally_hand random 1|Duel:Strike enemy_commander 5
+13;Fearless Cavalry;5;3;3;1;Battlecry:Strike enemy_commander 2
+14;Life Approving Monolith;0;0;10;1;Battlecry:Heal all allies 3
+16;Spoiled Priest;3;1;6;3;Battlecry:Strike ally_commander 4|Duel:Heal all allies 4
